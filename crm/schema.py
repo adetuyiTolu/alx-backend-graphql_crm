@@ -5,19 +5,26 @@ from graphql import GraphQLError
 from .models import Customer, Product, Order
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
+from .models import Customer, Product, Order
+from .filters import CustomerFilter, ProductFilter, OrderFilter
 
 # Object Types
 class CustomerType(DjangoObjectType):
     class Meta:
         model = Customer
+        interfaces = (graphene.relay.Node,)
 
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
+        interfaces = (graphene.relay.Node,)
 
 class OrderType(DjangoObjectType):
     class Meta:
         model = Order
+        interfaces = (graphene.relay.Node,)
 
 # Mutations
 class CreateCustomer(graphene.Mutation):
@@ -62,7 +69,7 @@ class BulkCreateCustomers(graphene.Mutation):
                 if cust.phone:
                     phone_regex = re.compile(r'^(\+?\d{10,15}|\d{3}-\d{3}-\d{4})$')
                     if not phone_regex.match(cust.phone):
-                        raise ValidationError(f"Invalid phone format for {data.email}")
+                        raise ValidationError(f"Invalid phone format for {cust.phone}")
                 customer = Customer(name=cust.name, email=cust.email, phone=cust.phone)
                 customer.full_clean()
                 customer.save()
@@ -124,7 +131,6 @@ class Mutation(graphene.ObjectType):
     create_order = CreateOrder.Field()  
     
 class Query(graphene.ObjectType):
-    all_customers = graphene.List(lambda: CustomerType)
-
-    def resolve_all_customers(root, info):
-        return Customer.objects.all()
+    all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter)
+    all_products = DjangoFilterConnectionField(ProductType, filterset_class=ProductFilter)
+    all_orders = DjangoFilterConnectionField(OrderType, filterset_class=OrderFilter)
