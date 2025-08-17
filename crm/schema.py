@@ -1,5 +1,7 @@
+import re
 import graphene
 from graphene_django.types import DjangoObjectType
+from graphql import GraphQLError
 from .models import Customer, Product, Order
 from django.db import transaction
 from django.core.exceptions import ValidationError
@@ -29,7 +31,13 @@ class CreateCustomer(graphene.Mutation):
 
     def mutate(self, info, name, email, phone=None):
         if Customer.objects.filter(email=email).exists():
-            raise ValidationError("Email already exists")
+           raise GraphQLError("Email already exists")
+
+        if phone:
+            phone_regex = re.compile(r'^(\+?\d{10,15}|\d{3}-\d{3}-\d{4})$')
+            if not phone_regex.match(phone):
+                raise GraphQLError("Invalid phone format")
+            
         customer = Customer(name=name, email=email, phone=phone)
         customer.save()
         return CreateCustomer(customer=customer, message="Customer created successfully")
@@ -48,6 +56,13 @@ class BulkCreateCustomers(graphene.Mutation):
         errors = []
         for cust in customers:
             try:
+                if Customer.objects.filter(email=cust.email).exists():
+                    raise ValidationError(f"Duplicate email: {cust.email}")
+
+                if cust.phone:
+                    phone_regex = re.compile(r'^(\+?\d{10,15}|\d{3}-\d{3}-\d{4})$')
+                    if not phone_regex.match(cust.phone):
+                        raise ValidationError(f"Invalid phone format for {data.email}")
                 customer = Customer(name=cust.name, email=cust.email, phone=cust.phone)
                 customer.full_clean()
                 customer.save()
