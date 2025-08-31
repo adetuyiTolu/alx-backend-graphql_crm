@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'graphene_django',
     "crm",
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +81,10 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+CRONJOBS = [
+    ('*/5 * * * *', 'crm.cron.log_crm_heartbeat'),
+]
 
 
 # Password validation
