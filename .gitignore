@@ -2,3 +2,5 @@ db.sqlite3
 db.sqlite3
 /crm/__pycache__
 .DS_Store
+*.pyc
+alx_backend_graphql/__pycache__/settings.cpython-313.pyc
