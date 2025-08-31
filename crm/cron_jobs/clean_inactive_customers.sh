@@ -10,7 +10,10 @@ from datetime import timedelta
 from crm.models import Customer
 
 one_year_ago = timezone.now() - timedelta(days=365)
-qs = Customer.objects.filter(orders__isnull=True, created_at__lt=one_year_ago)
+qs = Customer.objects.filter(
+    orders__order_date__lt=one_year_ago
+).distinct()
+
 count = qs.count()
 qs.delete()
 print(count)
