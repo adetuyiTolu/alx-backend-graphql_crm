@@ -123,12 +123,35 @@ class CreateOrder(graphene.Mutation):
         order.save()
         return CreateOrder(order=order)
 
+class UpdateLowStockProducts(graphene.Mutation):
+    class Arguments:
+        increment_by = graphene.Int(default_value=10)
+
+    updated_products = graphene.List(ProductType)
+    message = graphene.String()
+
+    def mutate(root, info, increment_by):
+        # Find products with stock < 10
+        low_stock_products = Product.objects.filter(stock__lt=10)
+        updated_list = []
+
+        for product in low_stock_products:
+            product.stock += increment_by
+            product.save()
+            updated_list.append(product)
+
+        return UpdateLowStockProducts(
+            updated_products=updated_list,
+            message=f"{len(updated_list)} products restocked successfully."
+        )
+
 # Combine Mutations
 class Mutation(graphene.ObjectType):
     create_customer = CreateCustomer.Field()
     bulk_create_customers = BulkCreateCustomers.Field()
     create_product = CreateProduct.Field()
     create_order = CreateOrder.Field()  
+    update_low_stock_products = UpdateLowStockProducts.Field()
     
 class Query(graphene.ObjectType):
     all_customers = DjangoFilterConnectionField(CustomerType, filterset_class=CustomerFilter)
